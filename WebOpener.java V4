@@ -1,0 +1,221 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.prefs.Preferences;
+
+public class WebOpener {
+	private static Preferences prefs = Preferences.userNodeForPackage(WebOpener.class);
+	private static HashMap<String, String[]> hotkeyMap = new HashMap<>();
+
+	public static void main(String[] args) {
+		loadPreferences();
+		SwingUtilities.invokeLater(WebOpener::createMainMenu);
+		startHotkeyListener();
+	}
+
+	private static void createMainMenu() {
+		JFrame frame = new JFrame("Web Opener");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(350, 200);
+		frame.setLayout(new FlowLayout());
+
+		JLabel label = new JLabel("Press assigned hotkeys to open webpages!");
+		JButton settingsButton = new JButton("Settings");
+
+		settingsButton.addActionListener(e -> createSettingsMenu());
+
+		frame.add(label);
+		frame.add(settingsButton);
+		frame.setVisible(true);
+	}
+
+	private static void createSettingsMenu() {
+		JFrame settingsFrame = new JFrame("Settings");
+		settingsFrame.setSize(500, 400);
+		settingsFrame.setLayout(new BorderLayout());
+
+		JPanel panel = new JPanel(new GridLayout(0, 4, 5, 5));
+
+		JTextField hotkeyField = new JTextField("Ctrl+Shift+A");
+		JTextField urlField = new JTextField("https://");
+		String[] browsers = {"Default", "Chrome", "Firefox", "Edge"};
+		JComboBox<String> browserBox = new JComboBox<>(browsers);
+		JButton addButton = new JButton("Add");
+
+		addButton.addActionListener(e -> {
+			String hotkey = hotkeyField.getText().toUpperCase();
+			String url = urlField.getText();
+			String browser = (String) browserBox.getSelectedItem();
+			if (!url.isEmpty() && !hotkey.isEmpty()) {
+				hotkeyMap.put(hotkey, new String[] {url, browser});
+				savePreferences();
+				settingsFrame.dispose();
+				createSettingsMenu();
+			}
+		});
+
+		panel.add(new JLabel("Hotkey:"));
+		panel.add(hotkeyField);
+		panel.add(new JLabel("URL:"));
+		panel.add(urlField);
+		panel.add(new JLabel("Browser:"));
+		panel.add(browserBox);
+		panel.add(addButton);
+
+		for (String hotkey : hotkeyMap.keySet()) {
+			JTextField urlText = new JTextField(hotkeyMap.get(hotkey)[0]);
+			urlText.setEditable(false);
+			JComboBox<String> browserSelect = new JComboBox<>(browsers);
+			browserSelect.setSelectedItem(hotkeyMap.get(hotkey)[1]);
+			JButton removeButton = new JButton("Remove");
+
+			removeButton.addActionListener(e -> {
+				hotkeyMap.remove(hotkey);
+				savePreferences();
+				settingsFrame.dispose();
+				createSettingsMenu();
+			});
+
+			panel.add(new JLabel(hotkey));
+			panel.add(urlText);
+			panel.add(browserSelect);
+			panel.add(removeButton);
+		}
+
+		settingsFrame.add(panel, BorderLayout.CENTER);
+		settingsFrame.setVisible(true);
+	}
+
+	private static void startHotkeyListener() {
+		new Thread(() -> {
+			try {
+				Robot robot = new Robot();
+				while (true) {
+					for (String hotkey : hotkeyMap.keySet()) {
+						if (isHotkeyPressed(hotkey)) {
+							openWebpage(hotkeyMap.get(hotkey)[0], hotkeyMap.get(hotkey)[1]);
+							Thread.sleep(500);
+						}
+					}
+					Thread.sleep(100);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}).start();
+	}
+
+	private static boolean isHotkeyPressed(String hotkey) {
+		try {
+			String[] keys = hotkey.split("\\+");
+			boolean allPressed = true;
+
+			for (String key : keys) {
+				int keyCode = getKeyCode(key.trim());
+				if (keyCode == -1 || !Toolkit.getDefaultToolkit().getLockingKeyState(keyCode)) {
+					allPressed = false;
+					break;
+				}
+			}
+			return allPressed;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	private static int getKeyCode(String key) {
+		switch (key) {
+		case "CTRL":
+			return KeyEvent.VK_CONTROL;
+		case "ALT":
+			return KeyEvent.VK_ALT;
+		case "SHIFT":
+			return KeyEvent.VK_SHIFT;
+		case "F1":
+			return KeyEvent.VK_F1;
+		case "F2":
+			return KeyEvent.VK_F2;
+		case "F3":
+			return KeyEvent.VK_F3;
+		case "F4":
+			return KeyEvent.VK_F4;
+		case "F5":
+			return KeyEvent.VK_F5;
+		case "F6":
+			return KeyEvent.VK_F6;
+		case "F7":
+			return KeyEvent.VK_F7;
+		case "F8":
+			return KeyEvent.VK_F8;
+		case "F9":
+			return KeyEvent.VK_F9;
+		case "F10":
+			return KeyEvent.VK_F10;
+		case "A":
+			return KeyEvent.VK_A;
+		case "B":
+			return KeyEvent.VK_B;
+		case "C":
+			return KeyEvent.VK_C;
+		case "D":
+			return KeyEvent.VK_D;
+		case "E":
+			return KeyEvent.VK_E;
+		case "F":
+			return KeyEvent.VK_F;
+		case "G":
+			return KeyEvent.VK_G;
+		default:
+			return -1;
+		}
+	}
+
+	private static void openWebpage(String url, String browser) {
+		try {
+			String command;
+			switch (browser) {
+			case "Chrome":
+				command = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe " + url;
+				break;
+			case "Firefox":
+				command = "C:\\Program Files\\Mozilla Firefox\\firefox.exe " + url;
+				break;
+			case "Edge":
+				command = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe " + url;
+				break;
+			default:
+				Desktop.getDesktop().browse(URI.create(url));
+				return;
+			}
+			Runtime.getRuntime().exec(command);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static void savePreferences() {
+		prefs.put("hotkeys", String.join(";", hotkeyMap.keySet()));
+		for (String hotkey : hotkeyMap.keySet()) {
+			prefs.put("url_" + hotkey, hotkeyMap.get(hotkey)[0]);
+			prefs.put("browser_" + hotkey, hotkeyMap.get(hotkey)[1]);
+		}
+	}
+
+	private static void loadPreferences() {
+		hotkeyMap.clear();
+		String savedHotkeys = prefs.get("hotkeys", "");
+		if (!savedHotkeys.isEmpty()) {
+			String[] keys = savedHotkeys.split(";");
+			for (String hotkey : keys) {
+				String url = prefs.get("url_" + hotkey, "");
+				String browser = prefs.get("browser_" + hotkey, "Default");
+				if (!url.isEmpty()) {
+					hotkeyMap.put(hotkey, new String[] {url, browser});
+				}
+			}
+		}
+	}
+}
