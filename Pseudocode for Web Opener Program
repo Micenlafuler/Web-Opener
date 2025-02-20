@@ -1,0 +1,83 @@
+Pseudocode for Web Opener Program
+Global Variables
+
+    prefs ← Load user preferences storage
+    defaultHotkey ← Retrieve stored hotkey from prefs, default to "F9"
+    defaultUrl ← Retrieve stored URL from prefs, default to "https://www.google.com"
+
+Main Function (main)
+
+    Start GUI on a separate thread using SwingUtilities.invokeLater(createMainMenu)
+    Start hotkey listener in a new thread using startHotkeyListener()
+
+Create Main Menu (createMainMenu)
+
+    Create a new JFrame named frame with title "Web Opener"
+    Set frame size to (300, 200)
+    Set layout to FlowLayout
+    Create a JLabel displaying "Press <defaultHotkey> to open the webpage!"
+    Create a JButton named settingsButton with label "Settings"
+    Add action listener to settingsButton → Call createSettingsMenu() when clicked
+    Add label and settingsButton to frame
+    Set frame visible
+
+Create Settings Menu (createSettingsMenu)
+
+    Create a new JFrame named settingsFrame with title "Settings"
+
+    Set settingsFrame size to (350, 200)
+
+    Set layout to GridLayout(3, 2)
+
+    Create a JLabel named hotkeyLabel with text "Select Hotkey:"
+
+    Create a JComboBox<String> named hotkeyBox containing values {"F1", "F2", ..., "F10"}
+
+    Set hotkeyBox selected value to defaultHotkey
+
+    Create a JLabel named urlLabel with text "Set Webpage URL:"
+
+    Create a JTextField named urlField with initial value defaultUrl
+
+    Create a JButton named saveButton with text "Save"
+
+    Add action listener to saveButton:
+        Store selected hotkeyBox value in prefs as "hotkey"
+        Store urlField text in prefs as "url"
+        Show message dialog "Settings Saved! Restart for changes."
+        Close settingsFrame
+
+    Add hotkeyLabel, hotkeyBox, urlLabel, urlField, empty label, and saveButton to settingsFrame
+
+    Set settingsFrame visible
+
+Start Hotkey Listener (startHotkeyListener)
+
+    Start new thread:
+        Create Robot instance
+        Loop indefinitely:
+            Convert defaultHotkey to Java KeyCode using getKeyCode(defaultHotkey)
+            If keyCode is valid and its state is active (Toolkit.getDefaultToolkit().getLockingKeyState(keyCode)):
+                Call openWebpage(defaultUrl)
+                Sleep for 500ms to prevent multiple triggers
+            Sleep for 100ms before checking again
+
+Convert Hotkey to KeyCode (getKeyCode(hotkey))
+
+    If hotkey is "F1", return KeyEvent.VK_F1
+    If hotkey is "F2", return KeyEvent.VK_F2
+    If hotkey is "F3", return KeyEvent.VK_F3
+    If hotkey is "F4", return KeyEvent.VK_F4
+    If hotkey is "F5", return KeyEvent.VK_F5
+    If hotkey is "F6", return KeyEvent.VK_F6
+    If hotkey is "F7", return KeyEvent.VK_F7
+    If hotkey is "F8", return KeyEvent.VK_F8
+    If hotkey is "F9", return KeyEvent.VK_F9
+    If hotkey is "F10", return KeyEvent.VK_F10
+    Otherwise, return -1
+
+Open Webpage (openWebpage(url))
+
+    Try:
+        Use Desktop.getDesktop().browse(URI.create(url)) to open webpage
+    Catch IOException, print error
